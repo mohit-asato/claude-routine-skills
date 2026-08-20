@@ -178,7 +178,12 @@ Build one JSON object matching this shape (the `daily_briefs` collection schema,
   "timezone": "<user's IANA timezone>",
   "generatedAt": "<ISO 8601 timestamp, now>",
   "scoringModel": "pickability-v1",
+  "boardTitle": "<2-5 word quirky name for tonight's board>",
   "headline": "<one sentence, conversational, honestly names the shape of the day>",
+  "scorecard": {
+    "verdict": "<2-3 word chip, e.g. 'main event', 'split decision', 'walkout only'>",
+    "line": "<1-2 sentences reacting to what actually happened today>"
+  },
   "items": [
     {
       "itemId": "<stable slug, e.g. jira key lowercased>",
@@ -234,6 +239,35 @@ audited back to which component caused it.
 the whole `items` entries for things that never existed, but keep the
 `activityLog` object's shape consistent (empty array, not a missing key) so
 downstream code and future reports can rely on the schema.
+
+`boardTitle` is the big heading on the dashboard — a fresh 2-5 word name for
+tonight, in the same register as the item titles: "Nine PRs Walk Into A Release",
+"The Board Barely Moved", "Death By A Thousand Reviews". Write a new one every
+run. Keep it under about 40 characters. The browser tab and the artifact name
+stay "Daily Ops" regardless — only this heading changes.
+
+`scorecard` drives the evening progress bar. The **percentage is computed by the
+renderer** from the item statuses (closed over everything on the board) — you do
+not supply it and must not try to influence it. You supply only the commentary:
+
+- `verdict` — a 2-3 word chip. Boxing/UFC scorecard language fits the shape well
+  ("main event", "split decision", "walkout only"), but movie and anime riffs are
+  equally welcome. This is the one place the report is allowed to be pure vibes.
+- `line` — one or two sentences reacting to the day *as it actually was*, citing
+  something concrete from it. Roasting and hyping are both fair game; the user
+  asked for it and prefers it to neutral corporate phrasing.
+
+The hard rule: **the joke bends, the facts do not.** A day where nothing closed
+gets a funny line about nothing closing — not a reframe that makes it sound
+productive. "0%. You attended the fight, you didn't take it" is good. "Lots of
+great groundwork today!" on a zero-close day is exactly the flattering fiction
+this whole skill exists to avoid. Equally, a genuinely huge day should be hyped
+without hedging. Reference the real numbers — which PRs, which tickets — so the
+line could only have been written about today.
+
+If you cannot write an honest line, omit `scorecard` entirely rather than padding
+it. The renderer degrades to the real percentage plus "No verdict written for
+today", which is a truthful blank rather than a fake compliment.
 
 `headline` should read like an honest recap to a friend, not a performance review
 — "Quiet on tickets, but you spent most of the day unblocking Shantanu and

@@ -287,6 +287,7 @@ schema, `type: "am"`):
   "timezone": "<user's IANA timezone>",
   "generatedAt": "<ISO 8601 timestamp, now>",
   "scoringModel": "pickability-v1",
+  "boardTitle": "<2-5 word quirky name for today's board>",
   "headline": "<one sentence, conversational, names the real shape of the day>",
   "items": [
     {
@@ -352,6 +353,15 @@ apply: `"missingFixVersion"` (an active Jira ticket with no fix version set —
 see Step 1) and `"stalling"` (this item, or a promise like it, has repeatedly
 failed to resolve across recent daily briefs — see Step 1's memory read). An
 item can carry both if it's earned both.
+
+`boardTitle` is the big heading on the dashboard — a fresh 2-5 word name for
+today, in the same cheeky register as the item titles. It should be about *this*
+day, not a generic label: "The Fires Were Already Out", "Five Days To Ship",
+"Everything Is Waiting On Someone Else". Movie / anime / UFC riffs land well.
+Write a new one every run; repeating yesterday's defeats the point. Keep it under
+about 40 characters so it doesn't wrap into three lines. The browser tab and the
+artifact's name stay "Daily Ops" regardless — only this heading changes, so the
+user can still find the page.
 
 `headline` should read like a person summarizing the day to a friend, not a status
 report — "Six quiet days, then Friday dumped a bug pile on your desk" rather than
