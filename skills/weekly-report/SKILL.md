@@ -44,26 +44,42 @@ useful than a week padded with invented ones. If genuinely nothing is available,
 say so plainly rather than inventing a report; it's fine to fall back to asking
 the user directly what happened this week in that case.
 
-### Cloud routines: use `scripts/brief_store.py`, not the MCP
+### Cloud routines: briefs live in the `daily-briefs` repo, not Mongo
 
-The `daily-brief-store` MCP server runs on Mohit's laptop. The database is
-Atlas, but the server process is local, so in a cloud routine those tools are
-simply absent. Use the helper in the cloned repo instead:
+The `daily-brief-store` MCP server runs on Mohit's laptop, and Atlas itself is
+also unreachable from a cloud routine: the sandbox only allows outbound 443, so
+port 27017 times out on every cluster node. This was measured, not assumed.
+
+So cloud routines read and write briefs as **files** in the
+[`mohit-asato/daily-briefs`](https://github.com/mohit-asato/daily-briefs) repo,
+which is attached as a second source and cloned alongside this one. One file per
+brief: `briefs/<YYYY-MM-DD>-<am|pm|weekly>.json`.
 
 ```bash
-pip install --quiet --force-reinstall cffi && pip install --quiet pymongo
-# the sandbox image ships a broken _cffi_backend; without the reinstall the
-# pymongo import dies before it ever reaches the network
-python scripts/brief_store.py recent --days 7        # the week's am + pm docs
+cd ../daily-briefs          # sibling checkout; adjust if the runner nests differently
+python3 brief_store.py list
+python3 brief_store.py recent --days 7            # the memory read in Step 1
+python3 brief_store.py get --date <YYYY-MM-DD> --type am
+python3 brief_store.py write --file <the document you built>
 ```
 
-Filter the returned array to the Monday-to-Friday window yourself. The
-connection string comes from `MONGODB_URI` in the environment — never echo it.
+`write` keys on `date` + `type` and replaces, so a re-run corrects the day
+instead of duplicating it. It writes atomically, so an interrupted run never
+leaves half a brief behind. `get` exits **3** when a brief simply does not exist
+yet — that is not an error, do not report it as one.
 
-If neither the MCP nor `brief_store.py` can reach the store, this step is
-genuinely unavailable: say so in one line and build the report from Slack
-alone, flagging in the message that the daily history was missing. Do not
-silently produce a thinner report as though nothing were wrong.
+**A write is not saved until it is committed and pushed:**
+
+```bash
+git add briefs/<the file> &&   git -c user.email=routine@asato.ai -c user.name="Report Routine"       commit -m "<type> brief for <date>" &&   git push origin HEAD:main
+```
+
+If the push fails, say so plainly in one line and carry on to the Slack step —
+the brief is written but unsaved, which is worth flagging and is not a reason to
+withhold the message the user actually reads.
+
+Prefer the `daily-brief-store` MCP when its tools **are** present (desktop runs).
+Atlas still holds the pre-2026-08-20 history and remains the archive.
 
 ## Step 2 — Pull this week's Slack conversations
 
@@ -159,8 +175,9 @@ forward it themselves.
 
 ## Step 5 — Save the week's report for future reference (optional but recommended)
 
-In a cloud routine, write it with `python scripts/brief_store.py upsert --file <doc>`
-(set `type` to `"weekly"`). Otherwise, if the `daily-brief-store` connector is available, insert the composed
+In a cloud routine, write it into the `daily-briefs` repo with
+`python3 brief_store.py write --file <doc>` (set `type` to `"weekly"`), then
+commit and push it as described above. Otherwise, if the `daily-brief-store` connector is available, insert the composed
 report as a document in `daily_briefs` with `type: "weekly"`, `date` set to the
 last day of the covered week, and a `sections` object mirroring the four bullet
 lists sent to Slack. This isn't required for the Slack message to go out, but

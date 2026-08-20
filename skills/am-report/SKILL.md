@@ -392,36 +392,42 @@ and why, then still proceed to send the Slack gist. A missing memory layer is a
 real gap worth flagging, not a reason to also withhold the Slack message the
 user actually reads.
 
-### Cloud routines: use `scripts/brief_store.py`, not the MCP
+### Cloud routines: briefs live in the `daily-briefs` repo, not Mongo
 
-The `daily-brief-store` MCP server runs on Mohit's laptop. The database it
-talks to is Atlas, but the *server process* is local, so a cloud routine cannot
-reach it and the MCP tools will simply not exist in that session.
+The `daily-brief-store` MCP server runs on Mohit's laptop, and Atlas itself is
+also unreachable from a cloud routine: the sandbox only allows outbound 443, so
+port 27017 times out on every cluster node. This was measured, not assumed.
 
-When the `daily-brief-store` tools are absent, use the helper in the cloned
-repo instead — same database, same collection, direct connection:
+So cloud routines read and write briefs as **files** in the
+[`mohit-asato/daily-briefs`](https://github.com/mohit-asato/daily-briefs) repo,
+which is attached as a second source and cloned alongside this one. One file per
+brief: `briefs/<YYYY-MM-DD>-<am|pm|weekly>.json`.
 
 ```bash
-pip install --quiet --force-reinstall cffi && pip install --quiet pymongo
-# the sandbox image ships a broken _cffi_backend; without the reinstall the
-# pymongo import dies before it ever reaches the network
-python scripts/brief_store.py ping               # fail fast if Atlas is unreachable
-python scripts/brief_store.py recent --days 7    # the memory read in Step 1
-python scripts/brief_store.py get --date <YYYY-MM-DD> --type am
-python scripts/brief_store.py upsert --file <the document you built>
+cd ../daily-briefs          # sibling checkout; adjust if the runner nests differently
+python3 brief_store.py list
+python3 brief_store.py recent --days 7            # the memory read in Step 1
+python3 brief_store.py get --date <YYYY-MM-DD> --type am
+python3 brief_store.py write --file <the document you built>
 ```
 
-`upsert` keys on `(date, type, userId)` and replaces, so a re-run corrects the
-day rather than duplicating it — the same rule as the MCP path.
+`write` keys on `date` + `type` and replaces, so a re-run corrects the day
+instead of duplicating it. It writes atomically, so an interrupted run never
+leaves half a brief behind. `get` exits **3** when a brief simply does not exist
+yet — that is not an error, do not report it as one.
 
-The connection string comes from `MONGODB_URI` in the environment. Never pass
-it on the command line, never echo it, and never write it into a file in the
-repo. If `ping` fails, say so plainly in one line and carry on to the Slack
-step: a missing memory layer is worth flagging, not a reason to also withhold
-the message the user actually reads.
+**A write is not saved until it is committed and pushed:**
 
-Prefer the MCP when its tools *are* present (desktop runs) — it is the same
-data either way, and the local path needs no network allowance.
+```bash
+git add briefs/<the file> &&   git -c user.email=routine@asato.ai -c user.name="Report Routine"       commit -m "<type> brief for <date>" &&   git push origin HEAD:main
+```
+
+If the push fails, say so plainly in one line and carry on to the Slack step —
+the brief is written but unsaved, which is worth flagging and is not a reason to
+withhold the message the user actually reads.
+
+Prefer the `daily-brief-store` MCP when its tools **are** present (desktop runs).
+Atlas still holds the pre-2026-08-20 history and remains the archive.
 
 ## Step 6 — Send the gist to Slack
 
