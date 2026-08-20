@@ -434,13 +434,19 @@ Then publish it over the existing artifact, keeping the same id so the user gets
 a new *version* of one artifact rather than a pile of separate ones (their version
 history is the day-to-day history, which is why the page itself has no history UI):
 
-1. `SendUserFile` on `dashboard.html` to get a `file_uuid`.
-2. `mcp__remote-devices__update_artifact` with `id: "daily-ops-dashboard"` and
-   that `file_uuid`.
+Call the **`Artifact`** tool with `file_path` pointing at `dashboard.html` and
+`url: "https://claude.ai/code/artifact/3b3f1b7f-cd71-4a6e-a327-ca732419c068"`. Passing that `url` is what makes this a new *version* of the
+existing board instead of a brand-new artifact — omit it and you silently fork a
+second dashboard every run. Keep `favicon` stable across runs (the tab icon is
+how the user finds the page); the document's own `<title>` names it, so there is
+no need to pass `title`.
 
-If `update_artifact` isn't available or fails — most likely because the user's
-desktop app isn't open, which is a real possibility for a scheduled run — say so
-plainly in one line and move on. The Mongo record is already safe and the Slack
+Do **not** use `mcp__remote-devices__update_artifact` — that tool only exists in
+the desktop Cowork session and is absent in a cloud routine. The older
+`daily-ops-dashboard` desktop artifact is frozen history; this URL is the live one.
+
+If the `Artifact` publish isn't available or fails, say so plainly in one line
+and move on. The Mongo record is already safe and the Slack
 message already sent, so a stale dashboard is a cosmetic gap, not a lost day. Do
 not retry in a loop or hold up the rest of the run for it.
 
@@ -450,7 +456,7 @@ If the invocation explicitly says **DRY_RUN** (e.g. during testing, or when the
 user asks to "preview" or "show me without sending"), do everything through
 Step 4 normally — pull real data, score it, build the real JSON — but skip the
 actual `insert_documents`/`update_documents` call in Step 5, the actual
-`slack_send_message` call in Step 6, and the `update_artifact` publish in Step 7.
+`slack_send_message` call in Step 6, and the `Artifact` publish in Step 7.
 Instead, print the JSON document you would have inserted and the exact Slack
 message text you would have sent, clearly labeled as a dry run. Rendering the
 dashboard HTML locally during a dry run is fine and often useful — it's only the
