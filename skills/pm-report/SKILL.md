@@ -303,6 +303,35 @@ and why, then still proceed to send the Slack gist. A missing memory layer is a
 real gap worth flagging, not a reason to also withhold the message the user
 actually reads.
 
+### Cloud routines: use `scripts/brief_store.py`, not the MCP
+
+The `daily-brief-store` MCP server runs on Mohit's laptop. The database it
+talks to is Atlas, but the *server process* is local, so a cloud routine cannot
+reach it and the MCP tools will simply not exist in that session.
+
+When the `daily-brief-store` tools are absent, use the helper in the cloned
+repo instead — same database, same collection, direct connection:
+
+```bash
+pip install --quiet pymongo                      # once per run; no-op if present
+python scripts/brief_store.py ping               # fail fast if Atlas is unreachable
+python scripts/brief_store.py recent --days 7    # the memory read in Step 1
+python scripts/brief_store.py get --date <YYYY-MM-DD> --type am
+python scripts/brief_store.py upsert --file <the document you built>
+```
+
+`upsert` keys on `(date, type, userId)` and replaces, so a re-run corrects the
+day rather than duplicating it — the same rule as the MCP path.
+
+The connection string comes from `MONGODB_URI` in the environment. Never pass
+it on the command line, never echo it, and never write it into a file in the
+repo. If `ping` fails, say so plainly in one line and carry on to the Slack
+step: a missing memory layer is worth flagging, not a reason to also withhold
+the message the user actually reads.
+
+Prefer the MCP when its tools *are* present (desktop runs) — it is the same
+data either way, and the local path needs no network allowance.
+
 ## Step 6 — Send the gist to Slack
 
 Send a message to the user's own Slack DM — short and scannable, since this is

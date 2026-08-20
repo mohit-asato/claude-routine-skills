@@ -44,6 +44,25 @@ useful than a week padded with invented ones. If genuinely nothing is available,
 say so plainly rather than inventing a report; it's fine to fall back to asking
 the user directly what happened this week in that case.
 
+### Cloud routines: use `scripts/brief_store.py`, not the MCP
+
+The `daily-brief-store` MCP server runs on Mohit's laptop. The database is
+Atlas, but the server process is local, so in a cloud routine those tools are
+simply absent. Use the helper in the cloned repo instead:
+
+```bash
+pip install --quiet pymongo
+python scripts/brief_store.py recent --days 7        # the week's am + pm docs
+```
+
+Filter the returned array to the Monday-to-Friday window yourself. The
+connection string comes from `MONGODB_URI` in the environment — never echo it.
+
+If neither the MCP nor `brief_store.py` can reach the store, this step is
+genuinely unavailable: say so in one line and build the report from Slack
+alone, flagging in the message that the daily history was missing. Do not
+silently produce a thinner report as though nothing were wrong.
+
 ## Step 2 — Pull this week's Slack conversations
 
 Dependencies and next-week plans live in conversation, not in tickets — search
@@ -138,7 +157,8 @@ forward it themselves.
 
 ## Step 5 — Save the week's report for future reference (optional but recommended)
 
-If the `daily-brief-store` connector is available, also insert the composed
+In a cloud routine, write it with `python scripts/brief_store.py upsert --file <doc>`
+(set `type` to `"weekly"`). Otherwise, if the `daily-brief-store` connector is available, insert the composed
 report as a document in `daily_briefs` with `type: "weekly"`, `date` set to the
 last day of the covered week, and a `sections` object mirroring the four bullet
 lists sent to Slack. This isn't required for the Slack message to go out, but
