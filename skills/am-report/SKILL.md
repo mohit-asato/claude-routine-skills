@@ -405,8 +405,6 @@ repo instead — same database, same collection, direct connection:
 pip install --quiet --force-reinstall cffi && pip install --quiet pymongo
 # the sandbox image ships a broken _cffi_backend; without the reinstall the
 # pymongo import dies before it ever reaches the network
-# the sandbox image ships a broken _cffi_backend; without the reinstall the
-# pymongo import dies before it ever reaches the network
 python scripts/brief_store.py ping               # fail fast if Atlas is unreachable
 python scripts/brief_store.py recent --days 7    # the memory read in Step 1
 python scripts/brief_store.py get --date <YYYY-MM-DD> --type am
