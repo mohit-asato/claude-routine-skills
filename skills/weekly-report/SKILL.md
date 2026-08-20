@@ -51,7 +51,9 @@ Atlas, but the server process is local, so in a cloud routine those tools are
 simply absent. Use the helper in the cloned repo instead:
 
 ```bash
-pip install --quiet pymongo
+pip install --quiet --force-reinstall cffi && pip install --quiet pymongo
+# the sandbox image ships a broken _cffi_backend; without the reinstall the
+# pymongo import dies before it ever reaches the network
 python scripts/brief_store.py recent --days 7        # the week's am + pm docs
 ```
 
