@@ -117,6 +117,40 @@ count).
   This should be as honest as the daily reports are — a week that was rough
   should read as rough, not softened into vague positivity. If the daily history
   shows something stalling repeatedly across the week, that belongs here.
+
+**Every bullet must name the actual thing** — the specific feature, fix, PR, or
+task — not a summary of the process around it. "Plain product language" means
+translating jargon into readable English, not compressing concrete work into
+vague meta-commentary about the work. A bullet has to answer "what, specifically,
+got done or is blocked" — if a reader can't picture the actual feature or bug
+from the bullet, it's too vague, no matter how polished it sounds.
+
+Bad (vague, describes the shape of the work instead of the work):
+- "Cleared a backlog of long-stalled reviews in a single day, including a
+  report-metadata request that had been open for 76 days, plus several smaller
+  fixes that had been waiting weeks."
+- "A recurring pattern this week: fixes shipped in code but their tickets sat
+  open for days afterward."
+
+Good (names the actual thing, still no Jira IDs or ticket keys):
+- "Shipped the report list update that adds report type and creator to the
+  summary view — this had been sitting open for about two and a half months."
+- "Landed schema-derived tile titles and descriptions across four repos
+  (metadata service, API, frontend, and the software-visibility data product)
+  in one coordinated release, then deployed it."
+- "Fixed a bug where clicking Create Survey repeatedly created duplicate
+  survey actions in the Action Center."
+- "Closed out three tickets whose fixes had already shipped days earlier —
+  the Halo conversation-threading fix, the duplicate-survey-action fix, and
+  the no-data-chart grouping — where only the ticket status was stale."
+
+The last "good" example shows how to handle a real multi-item pattern (several
+tickets stuck open after their code shipped): name each item briefly rather
+than describing the pattern in the abstract. If there are too many to name
+individually, name the most significant ones and say how many more of the same
+shape, e.g. "...plus two more of the same kind." Never summarize away the
+content just to keep the bullet short — trim by cutting less important items,
+not by making the surviving bullet vaguer.
 - **Dependencies** — drawn from Step 2's Slack read: things the user is waiting
   on from someone else, or things someone else is waiting on from the user.
   Phrase both directions plainly (e.g. "waiting on design sign-off before this
